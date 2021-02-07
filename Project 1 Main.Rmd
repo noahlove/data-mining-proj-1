@@ -1,0 +1,79 @@
+---
+title: "Project 1 Main"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(httr)
+```
+
+
+
+```{r}
+url1 <- "https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY&symbol=VOO&apikey=mykey"
+
+response <-GET(url=url1)
+
+response$url
+
+```
+
+
+```{r}
+## Install the required package with:
+## install.packages("RSocrata")
+
+library("RSocrata")
+
+df <- read.socrata(
+  "https://data.cityofchicago.org/resource/ydr8-5enu.json",
+  app_token = "YOURAPPTOKENHERE",
+  email     = "user@example.com",
+  password  = "fakepassword"
+)
+```
+
+
+```{r}
+
+df3 <- read.socrata(
+  "https://data.cityofnewyork.us/resource/erm2-nwe9.csv?where=created_date between '2018-01-01 00:00:00 EDT' and '2021-01-01 00:00:00 EDT'",
+  app_token = "token",
+  email     = "email",
+  password  = "password")
+
+
+```
+
+
+
+
+```{r}
+API_endpoint <- "https://data.cityofnewyork.us/resource/erm2-nwe9.json"
+
+
+```
+
+
+```{r}
+library(httr)
+# YOU SHOULD USE YOUR API KEY for good practice! Hint: add_headers()
+
+out <- httr::GET("https://data.cityofnewyork.us/resource/erm2-nwe9.json",
+          query = list(
+  '$where'= "created_date between '2021-01-21' and '2021-01-31' AND agency like 'MAY%'",
+  '$limit'= 10))
+content(out)[[2]]$agency_name
+```
+
+```{r}
+df3 <- read.socrata(
+  "https://data.cityofnewyork.us/resource/erm2-nwe9.csv?where=created_date between '2018-01-01 00:00:00 EDT' and '2021-01-01 00:00:00 EDT'",
+  app_token = "token",
+  email     = "email",
+  password  = "password")
+```
+
+
