@@ -49,3 +49,37 @@ nyc <-  as.data.frame(read.socrata("https://data.cityofnewyork.us/resource/fhrw-
 
 
 
+
+
+
+
+
+
+
+
+### Mapping of the data
+
+```{r}
+register_google(key = "AIzaSyAEkvFUTrN-n96QqRvpHxmtNyucQveP8oU")
+```
+
+ 
+```{r}
+nyc_map <- get_map(location = c(lon = -74.00, lat = 40.71), maptype = "terrain", zoom = 11)
+```
+
+
+```{r}
+ggmap(nyc_map)
+```
+
+
+
+```{r}
+leaflet() %>%
+  addTiles() %>%
+  setView(-74.00, 40.71, zoom = 12)
+```
+```
+
+
