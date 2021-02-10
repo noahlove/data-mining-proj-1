@@ -14,21 +14,14 @@ library("RSocrata")
 
 ### 311 data
 
-```{r include=FALSE}
+```{r API info, include=FALSE}
 api_key <- "1x1syxa046asdu0rkk842sht5"
 api_key_secret <- "3y8qpo8krd82vwnhxxjufuk8fv35tidgvc0gx2dhnbgeor1900"
 token <- "ADRRlI3DDJge67NUzvmCG3vU3"
 ```
 
-```{r}
 
-```
-
-
-```{r}
-## Install the required package with:
-## install.packages("RSocrata")
-
+```{r Sample Data Pulls, eval=FALSE, include=FALSE}
 #sample pull of 1 entry
 #https://data.cityofnewyork.us/resource/erm2-nwe9.json?unique_key=10693408
 
@@ -36,7 +29,7 @@ token <- "ADRRlI3DDJge67NUzvmCG3vU3"
 #df <- read.socrata(url = "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=10")
 ```
 
-```{r}
+```{r 311 data pull}
 
 # Call in NYC data for 2019
 nyc <-  as.data.frame(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv.json?$where=created_date between '2019-01-01T12:00:00' and '2019-12-31T23:59:59'", app_token = token))
