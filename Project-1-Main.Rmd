@@ -5,11 +5,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-#general
 library(tidyverse)
 library(httr)
-#for 311 data
-library("RSocrata")
 ```
 
 ### 311 data
@@ -21,7 +18,8 @@ token <- "ADRRlI3DDJge67NUzvmCG3vU3"
 ```
 
 ```{r}
-
+#sample pull of 1 entry
+#https://data.cityofnewyork.us/resource/erm2-nwe9.json?unique_key=10693408
 ```
 
 
@@ -29,14 +27,21 @@ token <- "ADRRlI3DDJge67NUzvmCG3vU3"
 ## Install the required package with:
 ## install.packages("RSocrata")
 
-#sample pull of 1 entry
-#https://data.cityofnewyork.us/resource/erm2-nwe9.json?unique_key=10693408
+library("RSocrata")
 
-#sample pull of 10
-#df <- read.socrata(url = "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=10")
+#df <- ls.socrata("http://data.cityofnewyork.us")
+
+df <- read.socrata(url = "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=10")
+
+df
 ```
 
+
 ```{r}
+#Data were loaded into RStudio via the RSocrata library using the following code. 
+
+#Install RSocrata library 
+library(RSocrata) 
 
 # Call in NYC data for 2019
 nyc <-  as.data.frame(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv.json?$where=created_date between '2019-01-01T12:00:00' and '2019-12-31T23:59:59'", app_token = token))
