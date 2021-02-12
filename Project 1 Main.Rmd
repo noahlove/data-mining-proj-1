@@ -41,10 +41,11 @@ token <- "ADRRlI3DDJge67NUzvmCG3vU3"
 ```{r 311 data pull}
 
 # Call in NYC data for 2019
-nyc <-  as.data.frame(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv.json?$where=created_date between '2019-01-01T12:00:00' and '2019-12-31T23:59:59'", app_token = token))
+nyc <-  as.data.frame(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv.json?$where=created_date between '2019-01-01T12:00:00' and '2019-12-31T23:59:59' and agency = 'NYPD'", app_token = token))
 
 #nyc
 
+head(nyc)
 ```
 
 
