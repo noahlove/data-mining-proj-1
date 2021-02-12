@@ -51,9 +51,10 @@ nyc <-  as_tibble(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv
 
 #clean the data
 df_311 <- nyc %>% 
-  mutate_at(vars(incident_zip, latitude, longitude, location_zip), as.numeric)
+  mutate_at(vars(incident_zip, latitude, longitude, location_zip), as.numeric) %>% 
+  select(-cross_street_1,-cross_street_2,-address_type,-facility_type,-due_date,-bbl,-x_coordinate_state_plane,-y_coordinate_state_plane,-park_facility_name,-park_borough,  -location_address,-location_state, -location_zip,-intersection_street_1,-intersection_street_2, -landmark,-bridge_highway_name,-bridge_highway_direction,-bridge_highway_segment,-road_ramp)
   
-#summary(df_311)
+#glimpse(df_311)
 ```
 
 
@@ -80,15 +81,11 @@ df_payroll_cleaned <- df_payroll %>%
 
 ```{r eval=FALSE, include=FALSE}
 summary(df_payroll_cleaned)
-
-factor(df_payroll_cleaned$agency_name)
 ```
 
 
 
 ```{r warning=FALSE}
-class(df_payroll_cleaned$agency_start_date)
-
 ggplot(df_payroll_cleaned, aes(x = year(agency_start_date))) + 
   geom_histogram(binwidth = 1) + 
   xlim(1960,2021)
@@ -98,12 +95,19 @@ ggplot(df_payroll_cleaned, aes(x = year(agency_start_date))) +
 
 ### Exploring the data
 
-```{r}
+```{r warning=FALSE}
 #head(df_311)
 
 counts_of_start_type <- df_311 %>% 
   group_by(open_data_channel_type) %>% 
   summarize(number_rows = n())
+
+location_type_count <- df_311 %>% 
+  group_by(location_type) %>% 
+  summarize(number_rows = n()) %>% 
+  arrange(decreasing = TRUE) %>% 
+  top_n(5)
+  
 ```
 
 ```{r}
@@ -111,6 +115,12 @@ ggplot(counts_of_start_type, aes(x = "", y = number_rows, fill = open_data_chann
   geom_bar(stat = "identity", width = 1, color="white") + 
   coord_polar("y", start = 0) + 
   theme_void() # remove background, grid, numeric labels
+
+ggplot(location_type_count, aes(x = "", y = number_rows, fill = location_type)) + 
+  geom_bar(stat = "identity", width = 1, color="white") + 
+  coord_polar("y", start = 0) + 
+  theme_void() + # remove background, grid, numeric labels 
+  labs(title = "Top 5 location calls")
 ```
 
 
