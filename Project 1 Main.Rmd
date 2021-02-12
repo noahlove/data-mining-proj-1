@@ -45,11 +45,15 @@ token <- "ADRRlI3DDJge67NUzvmCG3vU3"
 ```{r 311 data pull}
 
 # Call in NYC data for 2019
-nyc <-  as.data.frame(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv.json?$where=created_date between '2019-01-01T12:00:00' and '2019-12-31T23:59:59' and agency = 'NYPD'", app_token = token))
+nyc <-  as.data.frame(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv.json?$where=created_date between '2018-01-01T12:00:00' and '2018-12-31T23:59:59' and agency = 'NYPD'", app_token = token))
 
-#nyc
+#head(nyc)
 
-head(nyc)
+#clean the data
+df_311 <- nyc %>% 
+  mutate_at(vars(incident_zip, latitude, longitude, location_zip), as.numeric)
+  
+#summary(df_311)
 ```
 
 
@@ -59,12 +63,10 @@ head(nyc)
 
 ```{r}
 #select only 1 year
-url_2019 <- "https://data.cityofnewyork.us/resource/k397-673e.json?fiscal_year=2019"
+url_2018 <- "https://data.cityofnewyork.us/resource/k397-673e.json?fiscal_year=2019"
 
 #create dataframe of payroll
-df_payroll <- as_tibble(read.socrata(url_2019))
-
-df_payroll$agency_start_date
+df_payroll <- as_tibble(read.socrata(url_2018))
 
 df_payroll_cleaned <- df_payroll %>%
   mutate_at(vars(fiscal_year,
@@ -79,7 +81,6 @@ df_payroll_cleaned <- df_payroll %>%
 ```{r eval=FALSE, include=FALSE}
 summary(df_payroll_cleaned)
 
-
 factor(df_payroll_cleaned$agency_name)
 ```
 
@@ -91,6 +92,13 @@ class(df_payroll_cleaned$agency_start_date)
 ggplot(df_payroll_cleaned, aes(x = year(agency_start_date))) + 
   geom_histogram(binwidth = 1) + 
   xlim(1960,2021)
+
+```
+
+
+### Exploring the data
+
+```{r}
 
 ```
 
