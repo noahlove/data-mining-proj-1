@@ -45,7 +45,7 @@ token <- "ADRRlI3DDJge67NUzvmCG3vU3"
 ```{r 311 data pull}
 
 # Call in NYC data for 2019
-nyc <-  as.data.frame(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv.json?$where=created_date between '2018-01-01T12:00:00' and '2018-12-31T23:59:59' and agency = 'NYPD'", app_token = token))
+nyc <-  as_tibble(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv.json?$where=created_date between '2018-01-01T12:00:00' and '2018-12-31T23:59:59' and agency = 'NYPD'", app_token = token))
 
 #head(nyc)
 
@@ -99,7 +99,18 @@ ggplot(df_payroll_cleaned, aes(x = year(agency_start_date))) +
 ### Exploring the data
 
 ```{r}
+#head(df_311)
 
+counts_of_start_type <- df_311 %>% 
+  group_by(open_data_channel_type) %>% 
+  summarize(number_rows = n())
+```
+
+```{r}
+ggplot(counts_of_start_type, aes(x = "", y = number_rows, fill = open_data_channel_type)) + 
+  geom_bar(stat = "identity", width = 1, color="white") + 
+  coord_polar("y", start = 0) + 
+  theme_void() # remove background, grid, numeric labels
 ```
 
 
