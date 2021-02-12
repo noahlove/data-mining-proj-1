@@ -11,6 +11,9 @@ library(httr)
 #for 311 data
 library("RSocrata")
 
+#pulling data
+library(jsonlite)
+
 #mapping libraries
 library(tigris)
 library(leaflet)
@@ -19,6 +22,7 @@ library(ggmap)
 library(maptools)
 library(broom)
 library(rgdal)
+library(lubridate)
 ```
 
 ### 311 data
@@ -51,10 +55,44 @@ head(nyc)
 
 
 
+### Salary Data
+
+```{r}
+#select only 1 year
+url_2019 <- "https://data.cityofnewyork.us/resource/k397-673e.json?fiscal_year=2019"
+
+#create dataframe of payroll
+df_payroll <- as_tibble(read.socrata(url_2019))
+
+df_payroll$agency_start_date
+
+df_payroll_cleaned <- df_payroll %>%
+  mutate_at(vars(fiscal_year,
+         payroll_number,
+         base_salary,
+         ot_hours,
+         total_ot_paid,
+         total_other_pay), as.numeric) 
+
+```
+
+```{r eval=FALSE, include=FALSE}
+summary(df_payroll_cleaned)
+
+
+factor(df_payroll_cleaned$agency_name)
+```
 
 
 
+```{r warning=FALSE}
+class(df_payroll_cleaned$agency_start_date)
 
+ggplot(df_payroll_cleaned, aes(x = year(agency_start_date))) + 
+  geom_histogram(binwidth = 1) + 
+  xlim(1960,2021)
+
+```
 
 
 
