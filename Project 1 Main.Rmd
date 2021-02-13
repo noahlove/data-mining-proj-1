@@ -191,8 +191,12 @@ dconverter<-function(x){
 #example 
 #dconverter(levels(as.factor(df_311$community_board))[17])
 
-df_311$duration<-as.numeric((df_311$closed_date-df_311$created_date))
+#full conversion (current runtime ~1-2 min)
 df_311$community_board_full<-laply(df_311$community_board,dconverter)
+#duration, in minuts, of 311 cases
+df_311$duration<-as.numeric((df_311$closed_date-df_311$created_date))
+
+
 
 ```
 
