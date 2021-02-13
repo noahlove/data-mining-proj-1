@@ -167,6 +167,32 @@ graph_pay
 ```
 
 
+### Does pay of community board effect responses?!
+
+Clearly different community boards are paid very different amounts. Does this reflect their community? So, how does this effect their 311 response? We can look at it :
+- Amount of 311 calls (more is probably worse?)
+- Time between created and closed
+- 
+
+```{r}
+df_311
+```
+
+
+
+### Algo idea, compare 1 district to the neighboring?
+
+
+
+```{r}
+sorted_311_community_board <- df_311 %>% 
+  group_by(community_board) %>% 
+  summarize(number_rows = n()) %>% 
+  arrange(desc(number_rows))
+
+sorted_311_community_board
+
+```
 
 
 
