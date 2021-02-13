@@ -23,6 +23,7 @@ library(maptools)
 library(broom)
 library(rgdal)
 library(lubridate)
+library(plyr)
 ```
 
 ### 311 data
@@ -175,7 +176,24 @@ Clearly different community boards are paid very different amounts. Does this re
 - 
 
 ```{r}
-df_311
+dconverter<-function(x){
+  boardnumber<-unlist(regmatches(x,gregexpr("[1-9]+",x)))
+  board_district<-unlist(regmatches(x,gregexpr("[BMQSU][a-zA-z]+",x)))
+  if (board_district[1]=="STATEN"){
+  newname<-paste(board_district,"COMMUNITY BD #",boardnumber)
+  } 
+  else{
+  newname<-paste(board_district,"COMMUNITY BOARD #",boardnumber)
+  }
+  return(newname[1])
+}
+
+#example 
+#dconverter(levels(as.factor(df_311$community_board))[17])
+
+df_311$duration<-as.numeric((df_311$closed_date-df_311$created_date))
+df_311$community_board_full<-laply(df_311$community_board,dconverter)
+
 ```
 
 
@@ -191,6 +209,8 @@ sorted_311_community_board <- df_311 %>%
   arrange(desc(number_rows))
 
 sorted_311_community_board
+
+
 
 ```
 
