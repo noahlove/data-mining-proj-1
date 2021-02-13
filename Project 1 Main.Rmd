@@ -52,7 +52,7 @@ nyc <-  as_tibble(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv
 #clean the data
 df_311 <- nyc %>% 
   mutate_at(vars(incident_zip, latitude, longitude, location_zip), as.numeric) %>% 
-  select(-cross_street_1,-cross_street_2,-address_type,-facility_type,-due_date,-bbl,-x_coordinate_state_plane,-y_coordinate_state_plane,-park_facility_name,-park_borough,  -location_address,-location_state, -location_zip,-intersection_street_1,-intersection_street_2, -landmark,-bridge_highway_name,-bridge_highway_direction,-bridge_highway_segment,-road_ramp)
+  select(-cross_street_1,-cross_street_2,-address_type,-facility_type,-due_date,-bbl,-x_coordinate_state_plane,-y_coordinate_state_plane,-park_facility_name,-park_borough,  -location_address,-location_state, -location_zip,-intersection_street_1,-intersection_street_2, -landmark,-bridge_highway_name,-bridge_highway_direction,-bridge_highway_segment,-road_ramp, -incident_address, -street_name, -location_city)
   
 #glimpse(df_311)
 ```
@@ -74,9 +74,13 @@ df_payroll_cleaned <- df_payroll %>%
          payroll_number,
          base_salary,
          ot_hours,
+         regular_gross_paid,
          total_ot_paid,
-         total_other_pay), as.numeric) 
+         total_other_pay), as.numeric) %>% 
+  mutate(total_pay = regular_gross_paid + total_ot_paid + total_other_pay)
 
+
+df_payroll_cleaned
 ```
 
 ```{r eval=FALSE, include=FALSE}
@@ -122,6 +126,47 @@ ggplot(location_type_count, aes(x = "", y = number_rows, fill = location_type)) 
   theme_void() + # remove background, grid, numeric labels 
   labs(title = "Top 5 location calls")
 ```
+
+
+```{r}
+glimpse(df_payroll_cleaned)
+
+ ## maybe we should look at pay by agency?
+
+```
+
+
+### Pay by department
+
+```{r}
+pay_by_department <- df_payroll_cleaned %>% 
+  group_by(agency_name) %>% 
+  summarise(Mean = mean(total_pay)) %>% 
+  arrange(decreasing = TRUE)
+
+bottom_pay_by_department <- pay_by_department %>% 
+  arrange(desc(Mean)) %>% 
+  top_n(-6) 
+  
+
+top_pay_by_department <- pay_by_department %>% 
+  arrange(desc(Mean)) %>% 
+  top_n(6)  
+  
+
+extreme_pay <- bind_rows(top_pay_by_department, bottom_pay_by_department)
+
+
+graph_pay <- ggplot(extreme_pay, aes(x = agency_name, y = Mean))+
+  geom_bar(stat = "identity") + 
+  ggtitle("Mean pay by agency (top and bottom 6)") + 
+  coord_flip()
+
+graph_pay
+
+```
+
+
 
 
 
