@@ -144,8 +144,8 @@ glimpse(df_payroll_cleaned)
 ```{r}
 pay_by_department<-df_payroll_cleaned %>% 
   group_by(agency_name) %>% 
-  summarise(Mean = mean(total_pay)) %>% 
-  arrange(decreasing = TRUE)
+  dplyr::summarise(Mean = mean(total_pay)) %>% 
+  dplyr::arrange(decreasing = TRUE)
 
 bottom_pay_by_department<-pay_by_department %>% 
   dplyr::arrange(desc(Mean)) %>% 
@@ -217,20 +217,6 @@ ggplot(df_merged,aes(x=Salary,y=Duration))+
 
 
 ### Algo idea, compare 1 district to the neighboring?
-
-
-
-```{r}
-sorted_311_community_board <- df_311 %>% 
-  group_by(community_board) %>% 
-  summarize(number_rows = n()) %>% 
-  arrange(desc(number_rows))
-
-sorted_311_community_board
-
-
-
-```
 
 
 
