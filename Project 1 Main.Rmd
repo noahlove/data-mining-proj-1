@@ -8,8 +8,11 @@ knitr::opts_chunk$set(echo = TRUE)
 #general
 library(tidyverse)
 library(httr)
+library(dplyr)
+library(plyr)
+library(gtools)
 #for 311 data
-library("RSocrata")
+library(RSocrata)
 
 #pulling data
 library(jsonlite)
@@ -104,12 +107,12 @@ ggplot(df_payroll_cleaned, aes(x = year(agency_start_date))) +
 
 counts_of_start_type <- df_311 %>% 
   group_by(open_data_channel_type) %>% 
-  summarize(number_rows = n())
+  dplyr::summarize(number_rows = n())
 
 location_type_count <- df_311 %>% 
   group_by(location_type) %>% 
-  summarize(number_rows = n()) %>% 
-  arrange(decreasing = TRUE) %>% 
+  dplyr::summarize(number_rows = n()) %>% 
+  dplyr::arrange(decreasing = TRUE) %>% 
   top_n(5)
   
 ```
@@ -139,25 +142,25 @@ glimpse(df_payroll_cleaned)
 ### Pay by department
 
 ```{r}
-pay_by_department <- df_payroll_cleaned %>% 
+pay_by_department<-df_payroll_cleaned %>% 
   group_by(agency_name) %>% 
   summarise(Mean = mean(total_pay)) %>% 
   arrange(decreasing = TRUE)
 
-bottom_pay_by_department <- pay_by_department %>% 
-  arrange(desc(Mean)) %>% 
+bottom_pay_by_department<-pay_by_department %>% 
+  dplyr::arrange(desc(Mean)) %>% 
   top_n(-6) 
   
 
 top_pay_by_department <- pay_by_department %>% 
-  arrange(desc(Mean)) %>% 
+  dplyr::arrange(desc(Mean)) %>% 
   top_n(6)  
   
 
-extreme_pay <- bind_rows(top_pay_by_department, bottom_pay_by_department)
+extreme_pay<-bind_rows(top_pay_by_department, bottom_pay_by_department)
 
 
-graph_pay <- ggplot(extreme_pay, aes(x = agency_name, y = Mean))+
+graph_pay<-ggplot(extreme_pay, aes(x = agency_name, y = Mean))+
   geom_bar(stat = "identity") + 
   ggtitle("Mean pay by agency (top and bottom 6)") + 
   coord_flip()
@@ -175,7 +178,40 @@ Clearly different community boards are paid very different amounts. Does this re
 - 
 
 ```{r}
-df_311
+#function that converts board names to payroll data format
+dconverter<-function(x){
+  boardnumber<-unlist(regmatches(x,gregexpr("[1-9]+",x)))
+  board_district<-unlist(regmatches(x,gregexpr("[BMQSU][a-zA-z]+",x)))
+  if (board_district[1]=="STATEN"){
+  newname<-paste(board_district,"ISLAND COMMUNITY BD",paste("#",boardnumber,sep=""))
+  } 
+  else{
+  newname<-paste(board_district,"COMMUNITY BOARD",paste("#",boardnumber,sep=""))
+  }
+  return(newname[1])
+}
+
+#example 
+#dconverter(levels(as.factor(df_311$community_board))[17])
+
+#full conversion (current runtime ~1-2 min)
+df_311$community_board_full<-laply(df_311$community_board,dconverter)
+#duration, in minutes, of 311 cases
+df_311$duration<-as.numeric((df_311$closed_date-df_311$created_date))
+
+#get average duration by community board
+durationavg<-t(as.data.frame(tapply(df_311$duration,df_311$community_board_full,mean)))
+#get average pay by community board
+payavg<-t(as.data.frame(tapply(df_payroll_cleaned$total_pay,df_payroll_cleaned$agency_name,mean)))
+#merge data
+df_merged<-smartbind(durationavg,payavg)
+df_merged<-as.data.frame(t(df_merged[,colSums(is.na(df_merged))==0]))
+colnames(df_merged)<-c("Duration","Salary")
+#scatterplot between total pay and duration 
+ggplot(df_merged,aes(x=Salary,y=Duration))+
+  geom_point()+
+  labs(title=paste("Scatterplot Between Average Salary and Duration of Cases","cor=",round(cor(df_merged$Salary,df_merged$Duration),2)))
+
 ```
 
 
@@ -192,6 +228,8 @@ sorted_311_community_board <- df_311 %>%
 
 sorted_311_community_board
 
+
+
 ```
 
 
@@ -204,7 +242,7 @@ register_google(key = "AIzaSyAEkvFUTrN-n96QqRvpHxmtNyucQveP8oU")
 
  
 ```{r}
-nyc_map <- get_map(location = c(lon = -74.00, lat = 40.71), maptype = "terrain", zoom = 11)
+nyc_map<-get_map(location = c(lon = -74.00, lat = 40.71), maptype = "terrain", zoom = 11)
 ```
 
 
