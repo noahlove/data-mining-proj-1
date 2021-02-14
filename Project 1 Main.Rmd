@@ -188,6 +188,22 @@ graph_pay<-ggplot(extreme_pay, aes(x = agency_name, y = Mean))+
 ```{r}
 graph_pay
 ```
+
+We also wanted to see the distribution of 311 calls by community board! We think they would be relatively equal.
+
+```{r}
+
+df_311
+
+community_board_311 <- df_311 %>% 
+  dplyr::group_by(community_board) %>% 
+  dplyr::summarize(number_rows = n()) %>% 
+  dplyr::arrange(desc(number_rows)) 
+  
+
+community_board_311
+```
+
 To our surprise, most of the highest paid (by average) agencies were the various community boards! Around \$100,000, these were high average salaries. But on the other end of the spectrum, some community boards were among the lowest 5 agencies paid. Especially surprising was that Bronx community boards were paid much higher than those in Manhattan for example. 
 
 With this in mind, we thought it represented the perfect cross over between the two datasets. Both the payroll and the 311 dataset listed the community board that was responsible. 
@@ -244,6 +260,12 @@ ggplot(df_merged,aes(x=Salary,y=Duration))+
 
 
 ### Algo idea, compare 1 district to the neighboring?
+
+```{r}
+
+
+
+```
 
 
 
