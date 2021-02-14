@@ -189,6 +189,10 @@ graph_pay<-ggplot(extreme_pay, aes(x = agency_name, y = Mean))+
 graph_pay
 ```
 
+To our surprise, most of the highest paid (by average) agencies were the various community boards! Around \$100,000, these were high average salaries. But on the other end of the spectrum, some community boards were among the lowest 5 agencies paid. Especially surprising was that Bronx community boards were paid much higher than those in Manhattan for example. With this in mind, we thought it represented the perfect cross over between the two datasets. Both the payroll and the 311 dataset listed the community board that was responsible. 
+
+
+
 We also wanted to see the distribution of 311 calls by community board! We think they would be relatively equal.
 
 ```{r}
@@ -203,10 +207,41 @@ community_board_311 <- df_311 %>%
 
 community_board_311
 ```
+Although not ideal for a bargraph, we graphed the various districts (or community boards) to see the variability, even though it is not possible to read the labels of which community is which. 
 
-To our surprise, most of the highest paid (by average) agencies were the various community boards! Around \$100,000, these were high average salaries. But on the other end of the spectrum, some community boards were among the lowest 5 agencies paid. Especially surprising was that Bronx community boards were paid much higher than those in Manhattan for example. 
+```{r Graph of 311s by district, echo=FALSE}
+cummunity_311s_graph <-ggplot(community_board_311, aes(x = community_board, y = number_rows))+
+  geom_bar(stat = "identity") + 
+  ggtitle("Mean pay by agency (top and bottom 6)") 
 
-With this in mind, we thought it represented the perfect cross over between the two datasets. Both the payroll and the 311 dataset listed the community board that was responsible. 
+cummunity_311s_graph
+
+```
+
+```{r echo=FALSE}
+
+bottom_311s <-community_board_311 %>% 
+  dplyr::arrange(desc(number_rows)) %>% 
+  top_n(-4) 
+  
+
+top_311s <- community_board_311 %>% 
+  dplyr::arrange(desc(number_rows)) %>% 
+  top_n(4)  
+  
+
+extreme_311s <-bind_rows(bottom_311s, top_311s)
+
+cummunity_311s_graph <-ggplot(extreme_311s, aes(x = community_board, y = number_rows))+
+  geom_bar(stat = "identity") + 
+  ggtitle("Mean pay by agency (top and bottom 6)") + 
+  coord_flip()
+
+cummunity_311s_graph
+
+```
+There is a wide disparity among 311's per community board! This is rather surprising, especially with how large of a jump there is. There are multiple districts with no 311s, while others, including Manhattan have more than 30,000 in one calanedar year. 
+
 
 ### Does pay of community board effect responses?!
 
@@ -261,11 +296,7 @@ ggplot(df_merged,aes(x=Salary,y=Duration))+
 
 ### Algo idea, compare 1 district to the neighboring?
 
-```{r}
 
-
-
-```
 
 
 
