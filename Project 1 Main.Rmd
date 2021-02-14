@@ -56,8 +56,6 @@ token <- "ADRRlI3DDJge67NUzvmCG3vU3"
 # Call in NYC data for 2019
 nyc <-  as_tibble(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv.json?$where=created_date between '2018-01-01T12:00:00' and '2018-12-31T23:59:59' and agency = 'NYPD'", app_token = token))
 
-#head(nyc)
-
 ```
 
 
@@ -83,7 +81,6 @@ url_2018 <- "https://data.cityofnewyork.us/resource/k397-673e.json?fiscal_year=2
 #create dataframe of payroll
 df_payroll <- as_tibble(read.socrata(url_2018))
 
-
 ```
 
 The same was done for the payroll dataset. However, we added an additional column here, which represented total pay for each employee as a sum of "regular pay, overtime pay and other pay."
@@ -101,10 +98,6 @@ df_payroll_cleaned <- df_payroll %>%
 
 ```
 
-```{r eval=FALSE, include=FALSE}
-glimpse(df_payroll_cleaned)
-```
-
 One of the first intruiging points on the data set was agency start date. In effect, we could see when each employee began working for the city! This also helped in case there was a large amount stuck at 1900 for example. Here, it appears the most tenure employee began in the 1960's!
 
 ```{r warning=FALSE}
@@ -120,7 +113,6 @@ ggplot(df_payroll_cleaned, aes(x = year(agency_start_date))) +
 Next, we thought it would be interesting to look at how 311 calls were made. I initally had assumed they were all phone calls, but in fact they weren't! Also reported is the location report type. For example, if there was a noise distrubance at a church, it would list a place of worship. Or if a playground set was broken, it would list a playground. Here, we chose to show the top 5.
 
 ```{r warning=FALSE}
-
 counts_of_start_type <- df_311 %>% 
   group_by(open_data_channel_type) %>% 
   dplyr::summarize(number_rows = n())
@@ -144,14 +136,6 @@ ggplot(location_type_count, aes(x = "", y = number_rows, fill = location_type)) 
   coord_polar("y", start = 0) + 
   theme_void() + # remove background, grid, numeric labels 
   labs(title = "Top 5 location calls")
-```
-
-
-```{r eval=FALSE, include=FALSE}
-glimpse(df_payroll_cleaned)
-
- ## maybe we should look at pay by agency?
-
 ```
 
 
@@ -196,18 +180,15 @@ To our surprise, most of the highest paid (by average) agencies were the various
 We also wanted to see the distribution of 311 calls by community board! We think they would be relatively equal.
 
 ```{r}
-
-df_311
-
 community_board_311 <- df_311 %>% 
   dplyr::group_by(community_board) %>% 
   dplyr::summarize(number_rows = n()) %>% 
   dplyr::arrange(desc(number_rows)) 
   
 
-community_board_311
+summary(community_board_311)
 ```
-Although not ideal for a bargraph, we graphed the various districts (or community boards) to see the variability, even though it is not possible to read the labels of which community is which. 
+There is quite a range! Although not ideal for a bargraph, we graphed the various districts (or community boards) to see the variability, even though it is not possible to read the labels of which community is which. 
 
 ```{r Graph of 311s by district, echo=FALSE}
 cummunity_311s_graph <-ggplot(community_board_311, aes(x = community_board, y = number_rows))+
@@ -219,7 +200,6 @@ cummunity_311s_graph
 ```
 
 ```{r echo=FALSE}
-
 bottom_311s <-community_board_311 %>% 
   dplyr::arrange(desc(number_rows)) %>% 
   top_n(-4) 
@@ -238,7 +218,6 @@ cummunity_311s_graph <-ggplot(extreme_311s, aes(x = community_board, y = number_
   coord_flip()
 
 cummunity_311s_graph
-
 ```
 There is a wide disparity among 311's per community board! This is rather surprising, especially with how large of a jump there is. There are multiple districts with no 311s, while others, including Manhattan have more than 30,000 in one calanedar year. 
 
@@ -294,7 +273,7 @@ ggplot(df_merged,aes(x=Salary,y=Duration))+
 
 
 ### Algo idea, compare 1 district to the neighboring?
-```{r}
+```{r warning=FALSE}
 #First idea, simple regression between salary (y) and number of 311 cases/average duration of 311 cases
 community_board_311_amount <- df_311 %>% 
   dplyr::group_by(community_board_full) %>% 
