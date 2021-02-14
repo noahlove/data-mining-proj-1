@@ -270,7 +270,6 @@ dconverter<-function(x){
 df_311$community_board_full<-laply(df_311$community_board,dconverter)
 #duration, in minutes, of 311 cases
 df_311$duration<-as.numeric((df_311$closed_date-df_311$created_date))
-
 #get average duration by community board
 durationavg<-t(as.data.frame(tapply(df_311$duration,df_311$community_board_full,mean)))
 #get average pay by community board
@@ -295,6 +294,46 @@ ggplot(df_merged,aes(x=Salary,y=Duration))+
 
 
 ### Algo idea, compare 1 district to the neighboring?
+```{r}
+#First idea, simple regression between salary (y) and number of 311 cases/average duration of 311 cases
+community_board_311_amount <- df_311 %>% 
+  dplyr::group_by(community_board_full) %>% 
+  dplyr::summarize(number_rows = n()) %>% 
+  dplyr::arrange(desc(number_rows))%>%
+  t()
+colnames(community_board_311_amount)<-community_board_311_amount[1,]
+community_board_311_amount<-t(as.data.frame(community_board_311_amount[2,]))
+df_merged_2<-t(df_merged)
+df_merged_2<-smartbind(df_merged_2,community_board_311_amount)
+rownames(df_merged_2)<-c(colnames(df_merged),"Total")
+df_merged_2<-as.data.frame(t(df_merged_2))
+df_merged_2[]<-lapply(df_merged_2,as.numeric)
+#model1
+
+lm1<-lm(Salary~Duration+Total,data=df_merged_2)
+summary(lm1)
+plot(df_merged_2$Salary,df_merged_2$Total,main="Scatterplot Between Salary and Number of 311 Cases, by Borough Boards",
+     xlab="Total Number of 311 cases, by Community Boards",
+     ylab="Average Salary, by Community Boards")
+
+
+#Second idea, simple regression between total payroll budget for a given community board (y) and number of 311 cases/average duration of 311 cases for that community board
+
+
+budget<-by(df_payroll_cleaned$total_pay,df_payroll_cleaned$agency_name,sum)
+df_budget<-t(as.data.frame(do.call(rbind,as.list(budget))))
+df_merged_3<-as.data.frame(t(smartbind(t(df_merged_2),df_budget)))
+colnames(df_merged_3)<-c(colnames(df_merged_2),"payrollbudget")
+
+lm2<-lm(payrollbudget~Duration+Total,data=df_merged_3)
+summary(lm2)
+
+ggplot(df_merged_3,aes(x=Total,y=payrollbudget))+
+  geom_point()+
+  labs(title=paste("Scatterplot Between Payroll Budget and Number of 311 Cases"))+
+  ylim(0,(10^6)/4)
+
+```
 
 
 
