@@ -30,6 +30,10 @@ library(lubridate)
 
 ### 311 data
 
+This project mainly focused on two specific data sets provided by the city of New York. The first is a collection of 311 reports; similar to 911 calls, these are reports to the city about problems or issues that are not of immediate importance. These include pot holes or lights burnt out for example. The data comes from [NYC 311](https://www.ny.gov/agencies/nyc-311) and is published on [NYC OpenData](https://nycopendata.socrata.com/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9).
+
+The second data set we used to compare is the payroll information for all public employees in New York City. This dataset provides locations and various metrics about pay and employement related to individual employees in the city. The dataset can be found here: [NYC Payroll](https://data.cityofnewyork.us/City-Government/Citywide-Payroll-Data-Fiscal-Year-/k397-673e) dataset.
+
 ```{r API info, include=FALSE}
 api_key <- "1x1syxa046asdu0rkk842sht5"
 api_key_secret <- "3y8qpo8krd82vwnhxxjufuk8fv35tidgvc0gx2dhnbgeor1900"
@@ -45,13 +49,21 @@ token <- "ADRRlI3DDJge67NUzvmCG3vU3"
 #df <- read.socrata(url = "https://data.cityofnewyork.us/resource/erm2-nwe9.json?$limit=10")
 ```
 
-```{r 311 data pull}
+
+
+```{r 311 data pull, echo=FALSE}
 
 # Call in NYC data for 2019
 nyc <-  as_tibble(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv.json?$where=created_date between '2018-01-01T12:00:00' and '2018-12-31T23:59:59' and agency = 'NYPD'", app_token = token))
 
 #head(nyc)
 
+```
+
+
+Dplyr was used to clean the data. Primarily this involved simple data cleaning; we converted numbers back to numbers rather than characters and removed the columns we felt were not helpful. 
+
+```{r clean 311 data}
 #clean the data
 df_311 <- nyc %>% 
   mutate_at(vars(incident_zip, latitude, longitude, location_zip), as.numeric) %>% 
@@ -61,17 +73,22 @@ df_311 <- nyc %>%
 ```
 
 
-
-
 ### Salary Data
 
-```{r}
+
+```{r Payroll data pull, echo=FALSE}
 #select only 1 year
 url_2018 <- "https://data.cityofnewyork.us/resource/k397-673e.json?fiscal_year=2019"
 
 #create dataframe of payroll
 df_payroll <- as_tibble(read.socrata(url_2018))
 
+
+```
+
+The same was done for the payroll dataset. However, we added an additional column here, which represented total pay for each employee as a sum of "regular pay, overtime pay and other pay."
+
+```{r cleaning payroll}
 df_payroll_cleaned <- df_payroll %>%
   mutate_at(vars(fiscal_year,
          payroll_number,
@@ -82,15 +99,13 @@ df_payroll_cleaned <- df_payroll %>%
          total_other_pay), as.numeric) %>% 
   mutate(total_pay = regular_gross_paid + total_ot_paid + total_other_pay)
 
-
-df_payroll_cleaned
 ```
 
 ```{r eval=FALSE, include=FALSE}
-summary(df_payroll_cleaned)
+glimpse(df_payroll_cleaned)
 ```
 
-
+One of the first intruiging points on the data set was agency start date. In effect, we could see when each employee began working for the city! This also helped in case there was a large amount stuck at 1900 for example. Here, it appears the most tenure employee began in the 1960's!
 
 ```{r warning=FALSE}
 ggplot(df_payroll_cleaned, aes(x = year(agency_start_date))) + 
@@ -102,8 +117,9 @@ ggplot(df_payroll_cleaned, aes(x = year(agency_start_date))) +
 
 ### Exploring the data
 
+Next, we thought it would be interesting to look at how 311 calls were made. I initally had assumed they were all phone calls, but in fact they weren't! Also reported is the location report type. For example, if there was a noise distrubance at a church, it would list a place of worship. Or if a playground set was broken, it would list a playground. Here, we chose to show the top 5.
+
 ```{r warning=FALSE}
-#head(df_311)
 
 counts_of_start_type <- df_311 %>% 
   group_by(open_data_channel_type) %>% 
@@ -131,7 +147,7 @@ ggplot(location_type_count, aes(x = "", y = number_rows, fill = location_type)) 
 ```
 
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 glimpse(df_payroll_cleaned)
 
  ## maybe we should look at pay by agency?
@@ -141,11 +157,13 @@ glimpse(df_payroll_cleaned)
 
 ### Pay by department
 
+Next in the exploration was asking who is paid the most and who is paid the least. We assume this is a rather normal question to ask with the payroll set. We assumed that the mayors office might be at top followed by high skilled or dangerous jobs such as firefighting or engineers for water or power. 
+
 ```{r}
 pay_by_department<-df_payroll_cleaned %>% 
   group_by(agency_name) %>% 
-  summarise(Mean = mean(total_pay)) %>% 
-  arrange(decreasing = TRUE)
+  dplyr::summarise(Mean = mean(total_pay)) %>% 
+  dplyr::arrange(decreasing = TRUE)
 
 bottom_pay_by_department<-pay_by_department %>% 
   dplyr::arrange(desc(Mean)) %>% 
@@ -165,9 +183,64 @@ graph_pay<-ggplot(extreme_pay, aes(x = agency_name, y = Mean))+
   ggtitle("Mean pay by agency (top and bottom 6)") + 
   coord_flip()
 
+```
+
+```{r}
 graph_pay
+```
+
+To our surprise, most of the highest paid (by average) agencies were the various community boards! Around \$100,000, these were high average salaries. But on the other end of the spectrum, some community boards were among the lowest 5 agencies paid. Especially surprising was that Bronx community boards were paid much higher than those in Manhattan for example. With this in mind, we thought it represented the perfect cross over between the two datasets. Both the payroll and the 311 dataset listed the community board that was responsible. 
+
+
+
+We also wanted to see the distribution of 311 calls by community board! We think they would be relatively equal.
+
+```{r}
+
+df_311
+
+community_board_311 <- df_311 %>% 
+  dplyr::group_by(community_board) %>% 
+  dplyr::summarize(number_rows = n()) %>% 
+  dplyr::arrange(desc(number_rows)) 
+  
+
+community_board_311
+```
+Although not ideal for a bargraph, we graphed the various districts (or community boards) to see the variability, even though it is not possible to read the labels of which community is which. 
+
+```{r Graph of 311s by district, echo=FALSE}
+cummunity_311s_graph <-ggplot(community_board_311, aes(x = community_board, y = number_rows))+
+  geom_bar(stat = "identity") + 
+  ggtitle("Mean pay by agency (top and bottom 6)") 
+
+cummunity_311s_graph
 
 ```
+
+```{r echo=FALSE}
+
+bottom_311s <-community_board_311 %>% 
+  dplyr::arrange(desc(number_rows)) %>% 
+  top_n(-4) 
+  
+
+top_311s <- community_board_311 %>% 
+  dplyr::arrange(desc(number_rows)) %>% 
+  top_n(4)  
+  
+
+extreme_311s <-bind_rows(bottom_311s, top_311s)
+
+cummunity_311s_graph <-ggplot(extreme_311s, aes(x = community_board, y = number_rows))+
+  geom_bar(stat = "identity") + 
+  ggtitle("Mean pay by agency (top and bottom 6)") + 
+  coord_flip()
+
+cummunity_311s_graph
+
+```
+There is a wide disparity among 311's per community board! This is rather surprising, especially with how large of a jump there is. There are multiple districts with no 311s, while others, including Manhattan have more than 30,000 in one calanedar year. 
 
 
 ### Does pay of community board effect responses?!
@@ -175,9 +248,8 @@ graph_pay
 Clearly different community boards are paid very different amounts. Does this reflect their community? So, how does this effect their 311 response? We can look at it :
 - Amount of 311 calls (more is probably worse?)
 - Time between created and closed
-- 
 
-```{r}
+```{r conversion and merger, echo=FALSE}
 #function that converts board names to payroll data format
 dconverter<-function(x){
   boardnumber<-unlist(regmatches(x,gregexpr("[1-9]+",x)))
@@ -208,6 +280,13 @@ df_merged<-smartbind(durationavg,payavg)
 df_merged<-as.data.frame(t(df_merged[,colSums(is.na(df_merged))==0]))
 colnames(df_merged)<-c("Duration","Salary")
 #scatterplot between total pay and duration 
+
+```
+
+Below we can see a scatterplot between average salary and duration of cases. 
+
+```{r scatterplot of total pay and duration}
+
 ggplot(df_merged,aes(x=Salary,y=Duration))+
   geom_point()+
   labs(title=paste("Scatterplot Between Average Salary and Duration of Cases","cor=",round(cor(df_merged$Salary,df_merged$Duration),2)))
@@ -215,48 +294,29 @@ ggplot(df_merged,aes(x=Salary,y=Duration))+
 ```
 
 
-
 ### Algo idea, compare 1 district to the neighboring?
 
 
-
-```{r}
-sorted_311_community_board <- df_311 %>% 
-  group_by(community_board) %>% 
-  summarize(number_rows = n()) %>% 
-  arrange(desc(number_rows))
-
-sorted_311_community_board
-
-
-
-```
 
 
 
 ### Mapping of the data
 
 ```{r}
-register_google(key = "AIzaSyAEkvFUTrN-n96QqRvpHxmtNyucQveP8oU")
+#register_google(key = "AIzaSyAEkvFUTrN-n96QqRvpHxmtNyucQveP8oU")
 ```
 
  
 ```{r}
-nyc_map<-get_map(location = c(lon = -74.00, lat = 40.71), maptype = "terrain", zoom = 11)
+#nyc_map<-get_map(location = c(lon = -74.00, lat = 40.71), maptype = "terrain", zoom = 11)
 ```
 
 
 ```{r}
-ggmap(nyc_map)
+#ggmap(nyc_map)
 ```
 
 
 
-```{r}
-leaflet() %>%
-  addTiles() %>%
-  setView(-74.00, 40.71, zoom = 12)
-```
-```
 
 
