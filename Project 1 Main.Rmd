@@ -189,6 +189,8 @@ different_board_pay <- df_payroll_cleaned %>%
 
 summary(different_board_pay)
 
+
+
 ```
 
 
@@ -323,49 +325,116 @@ ggplot(df_merged,aes(x=Salary,y=Duration))+
 There is a slight positive line but with the low correlation we would say this is not incredibly meaningful.
 
 ### Algo idea, compare 1 district to the neighboring?
-```{r warning=FALSE}
+```{r echo=FALSE, warning=FALSE}
 #First idea, simple regression between salary (y) and number of 311 cases/average duration of 311 cases
-community_board_311_amount <- df_311 %>% 
-  dplyr::group_by(community_board_full) %>% 
-  dplyr::summarize(number_rows = n()) %>% 
-  dplyr::arrange(desc(number_rows))%>%
+community_board_311_amount <- df_311 %>%
+  dplyr::group_by(community_board_full) %>%
+  dplyr::summarize(number_rows = n()) %>%
+  dplyr::arrange(desc(number_rows)) %>%
   t()
-colnames(community_board_311_amount)<-community_board_311_amount[1,]
-community_board_311_amount<-t(as.data.frame(community_board_311_amount[2,]))
-df_merged_2<-t(df_merged)
-df_merged_2<-smartbind(df_merged_2,community_board_311_amount)
-rownames(df_merged_2)<-c(colnames(df_merged),"Total")
-df_merged_2<-as.data.frame(t(df_merged_2))
-df_merged_2[]<-lapply(df_merged_2,as.numeric)
+
+colnames(community_board_311_amount) <- community_board_311_amount[1, ]
+
+community_board_311_amount <- t(as.data.frame(community_board_311_amount[2, ]))
+df_merged_2 <- t(df_merged)
+df_merged_2 <- smartbind(df_merged_2, community_board_311_amount)
+rownames(df_merged_2) <- c(colnames(df_merged), "Total")
+df_merged_2 <- as.data.frame(t(df_merged_2))
+df_merged_2[] <- lapply(df_merged_2, as.numeric)
+
 #model1
+lm1 <- lm(Salary ~ Duration + Total, data = df_merged_2)
 
-lm1<-lm(Salary~Duration+Total,data=df_merged_2)
 summary(lm1)
-plot(df_merged_2$Salary,df_merged_2$Total,main="Scatterplot Between Salary and Number of 311 Cases, by Borough Boards",
-     xlab="Total Number of 311 cases, by Community Boards",
-     ylab="Average Salary, by Community Boards")
+
+plot(
+  df_merged_2$Salary,
+  df_merged_2$Total,
+  main = "Scatterplot Between Salary and Number of 311 Cases, by Borough Boards",
+  xlab = "Total Number of 311 cases, by Community Boards",
+  ylab = "Average Salary, by Community Boards"
+)
 
 
-#Second idea, simple regression between total payroll budget for a given community board (y) and number of 311 cases/average duration of 311 cases for that community board
+```
+
+### Second idea, simple regression between total payroll budget for a given community board (y) and number of 311 cases/average duration of 311 cases for that community board
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+budget <-
+  by(df_payroll_cleaned$total_pay,
+     df_payroll_cleaned$agency_name,
+     sum)
+df_budget <- t(as.data.frame(do.call(rbind, as.list(budget))))
+df_merged_3 <- as.data.frame(t(smartbind(t(df_merged_2), df_budget)))
+colnames(df_merged_3) <- c(colnames(df_merged_2), "payrollbudget")
 
 
-budget<-by(df_payroll_cleaned$total_pay,df_payroll_cleaned$agency_name,sum)
-df_budget<-t(as.data.frame(do.call(rbind,as.list(budget))))
-df_merged_3<-as.data.frame(t(smartbind(t(df_merged_2),df_budget)))
-colnames(df_merged_3)<-c(colnames(df_merged_2),"payrollbudget")
 
-lm2<-lm(payrollbudget~Duration+Total,data=df_merged_3)
+lm2 <- lm(payrollbudget ~ Duration + Total, data = df_merged_3)
 summary(lm2)
 
 ggplot(df_merged_3,aes(x=Total,y=payrollbudget))+
   geom_point()+
   labs(title=paste("Scatterplot Between Payroll Budget and Number of 311 Cases"))+
-  ylim(0,(10^6)/4)
+  ylim(0,(10^6)/4) + 
+  geom_smooth(method = lm)
 
 ```
+Finally what if we looked at more specificially only a certain position, in this case the "district manager" although there many be several on a community board. The pay difference in this case is far more dirastic! 
+
+```{r}
+only_boards_df <- df_payroll_cleaned %>%
+   dplyr::filter(grepl('COMMUNITY', agency_name)) %>% 
+   dplyr::filter(!grepl('COLLEGE', agency_name)) %>% 
+   dplyr::filter(grepl('DISTRICT MANAGER', title_description))  
+
+only_boards_merged <- as.data.frame(t(smartbind(t(only_boards_df), df_budget)))
+colnames(df_merged_3) <- c(colnames(df_merged_2), "payrollbudget")
+
+only_boards_merged
+
+summary(only_boards_df$total_pay)
+```
+So as one final chance, lets try grouping these by distric and see if there is a stronger result. This removes smaller positions like 
+
+```{r}
+
+only_boards_df <- df_payroll_cleaned %>%
+   dplyr::filter(grepl('COMMUNITY', agency_name)) %>% 
+   dplyr::filter(!grepl('COLLEGE', agency_name)) %>% 
+   dplyr::filter(grepl('DISTRICT MANAGER', title_description))  %>% 
+   dplyr::group_by(agency_name) %>% 
+   dplyr::summarise(Mean = mean(total_pay))
+
+summary(only_boards_df)
 
 
+payroll_budget <- df_merged_3 %>% 
+  tibble::rownames_to_column() %>% 
+  dplyr::filter(grepl('COMMUNITY', rowname)) %>% 
+  dplyr::filter(!grepl('COLLEGE', rowname)) %>% 
+  dplyr::group_by(rowname) %>% 
+  dplyr::select(rowname, payrollbudget) 
 
+
+colnames(payroll_budget) <- c("agency_name", "payroll_budget")
+  
+managers_and_budget <- merge(payroll_budget, only_boards_df)
+
+lm_payroll_to_district_manager <- lm(payroll_budget ~ Mean, data = managers_and_budget)
+summary(lm_payroll_to_district_manager)
+
+ggplot(data = lm_payroll_to_district_manager, mapping = aes(x = payroll_budget, y = Mean)) + 
+  geom_point() + 
+  geom_smooth(method = lm)
+```
+
+This is rather obvious. The larger the budget, the more the district managers are paid. 
+
+```{r}
+#Last I want to compare distric manager to number of cases
+```
 
 
 
