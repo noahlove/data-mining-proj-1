@@ -171,11 +171,12 @@ graph_pay<-ggplot(extreme_pay, aes(x = agency_name, y = Mean))+
   coord_flip()
 
 ```
+To our great surprise, most of the highest paid (by average) agencies were the various community boards! Around \$100,000, these were high average salaries. But on the other end of the spectrum, some community boards were among the lowest 5 agencies paid. Below is a summary of just community board pay throughout New York City. Especially surprising was that Bronx community boards were paid much higher than those in Manhattan for example. 
 
 ```{r echo=FALSE, warning=FALSE}
 graph_pay
 ```
-To our great surprise, most of the highest paid (by average) agencies were the various community boards! Around \$100,000, these were high average salaries. But on the other end of the spectrum, some community boards were among the lowest 5 agencies paid. Below is a summary of just community board pay throughout New York City. Especially surprising was that Bronx community boards were paid much higher than those in Manhattan for example. 
+Here is a summary of the averages of only the community boards. The pay ranges from (on average) \$16,500 to over \$112,000! This is quite the gap!
 
 ```{r}
 df_payroll_cleaned
@@ -186,17 +187,14 @@ different_board_pay <- df_payroll_cleaned %>%
    dplyr::group_by(agency_name) %>% 
    dplyr::summarise(Mean = mean(total_pay)) 
 
-different_board_pay  
+summary(different_board_pay)
+
 ```
 
 
+With this in mind, we thought it represented the perfect cross over between the two datasets. Both the payroll and the 311 dataset listed the community board that was responsible. 
 
-
-With this in mind, we thought it represented the perfect cross over between the two datasets. Both the payroll and the 311 dataset listed the community board that was responsible. We also wanted to see the distribution of 311 calls by community board! We think they would be relatively equal.
-
-
-
-
+First we should look at the distribution of 311 calls. We initially assumed they would be rather consistent between community board, with it more likely to have more calls in higher population areas. However, there was a lot of variance. Below is summary of the number of 311 calls by community board. 
 
 
 ```{r Summary of board pay, echo=FALSE, message=FALSE, warning=FALSE}
@@ -205,12 +203,10 @@ community_board_311 <- df_311 %>%
   dplyr::summarize(number_rows = n()) %>% 
   dplyr::arrange(desc(number_rows)) 
   
-
 summary(community_board_311)
 ```
 
 There is quite a range! Although not ideal for a bargraph, we graphed the various districts (or community boards) to see the variability, even though it is not possible to read the labels of which community is which. 
-
 
 
 
@@ -222,6 +218,7 @@ cummunity_311s_graph <-ggplot(community_board_311, aes(x = community_board, y = 
 cummunity_311s_graph
 
 ```
+Taking a closer look at the top and bottom contributors:
 
 ```{r echo=FALSE}
 bottom_311s <-community_board_311 %>% 
@@ -241,25 +238,33 @@ cummunity_311s_graph <-ggplot(extreme_311s, aes(x = community_board, y = number_
 
 cummunity_311s_graph
 ```
-There is a wide disparity among 311's per community board! This is rather surprising, especially with how large of a jump there is. There are multiple districts with no 311s, while others, including Manhattan have more than 30,000 in one calanedar year. 
+
+There is a wide disparity among 311's per community board! This is rather surprising, especially with how large of a jump there is. There are multiple districts with no 311s, in multiple boroughs, while others, including Manhattan have more than 30,000 in one calanedar year. However, the top contributing community board areas were not just Manhattan, but 3 different boroughs in just the top 4 results. 
 
 
 ### Does pay of community board effect responses?!
 
-Clearly different community boards are paid very different amounts. Does this reflect their community? So, how does this effect their 311 response? We can look at it :
-- Amount of 311 calls (more is probably worse?)
-- Time between created and closed
+Clearly different community boards are paid very different amounts. Does this reflect their community and their involvement in making that area better? We would hope that the highest paid community boards had the best areas. This would be represented in their 311 response.  We can look at it :
+- Amount of 311 calls (more is probably worse) as it represents problems
+- Time between created and closed, or how long it takes to fix problems
 
 ```{r conversion and merger, echo=FALSE}
 #function that converts board names to payroll data format
-dconverter<-function(x){
-  boardnumber<-unlist(regmatches(x,gregexpr("[1-9]+",x)))
-  board_district<-unlist(regmatches(x,gregexpr("[BMQSU][a-zA-z]+",x)))
-  if (board_district[1]=="STATEN"){
-  newname<-paste(board_district,"ISLAND COMMUNITY BD",paste("#",boardnumber,sep=""))
-  } 
+dconverter <- function(x) {
+  boardnumber <- unlist(regmatches(x, gregexpr("[1-9]+", x)))
+  board_district <-
+    unlist(regmatches(x, gregexpr("[BMQSU][a-zA-z]+", x)))
+  if (board_district[1] == "STATEN") {
+    newname <-
+      paste(board_district,
+            "ISLAND COMMUNITY BD",
+            paste("#", boardnumber, sep = ""))
+  }
   else{
-  newname<-paste(board_district,"COMMUNITY BOARD",paste("#",boardnumber,sep=""))
+    newname <-
+      paste(board_district,
+            "COMMUNITY BOARD",
+            paste("#", boardnumber, sep = ""))
   }
   return(newname[1])
 }
@@ -268,31 +273,54 @@ dconverter<-function(x){
 #dconverter(levels(as.factor(df_311$community_board))[17])
 
 #full conversion (current runtime ~1-2 min)
-df_311$community_board_full<-laply(df_311$community_board,dconverter)
+df_311$community_board_full <-
+  laply(df_311$community_board, dconverter)
 #duration, in minutes, of 311 cases
-df_311$duration<-as.numeric((df_311$closed_date-df_311$created_date))
+df_311$duration <-
+  as.numeric((df_311$closed_date - df_311$created_date))
 #get average duration by community board
-durationavg<-t(as.data.frame(tapply(df_311$duration,df_311$community_board_full,mean)))
+durationavg <-
+  t(as.data.frame(tapply(
+    df_311$duration, df_311$community_board_full, mean
+  )))
 #get average pay by community board
-payavg<-t(as.data.frame(tapply(df_payroll_cleaned$total_pay,df_payroll_cleaned$agency_name,mean)))
+payavg <-
+  t(as.data.frame(
+    tapply(
+      df_payroll_cleaned$total_pay,
+      df_payroll_cleaned$agency_name,
+      mean
+    )
+  ))
 #merge data
-df_merged<-smartbind(durationavg,payavg)
-df_merged<-as.data.frame(t(df_merged[,colSums(is.na(df_merged))==0]))
-colnames(df_merged)<-c("Duration","Salary")
-#scatterplot between total pay and duration 
+df_merged <- smartbind(durationavg, payavg)
+df_merged <-
+  as.data.frame(t(df_merged[, colSums(is.na(df_merged)) == 0]))
+colnames(df_merged) <- c("Duration", "Salary")
+
 
 ```
 
 Below we can see a scatterplot between average salary and duration of cases. 
 
-```{r scatterplot of total pay and duration}
+```{r scatterplot of total pay and duration, echo=FALSE}
 
 ggplot(df_merged,aes(x=Salary,y=Duration))+
   geom_point()+
   labs(title=paste("Scatterplot Between Average Salary and Duration of Cases","cor=",round(cor(df_merged$Salary,df_merged$Duration),2)))
 
 ```
+The answer appears to be no. The vast majority of communities have a very similar average duration (100-500 minutes) regardless of mean pay. Then there are the 3 large outliers at the top. If we pretend the 3 high outliers aren't relevant (maybe these calls relate to things outside of the boards controll, like bridges or times square for example):
 
+```{r echo=FALSE}
+ggplot(df_merged,aes(x=Salary,y=Duration))+
+  geom_point()+
+  labs(title=paste("Scatterplot Between Average Salary and Duration of Cases","cor=",round(cor(df_merged$Salary,df_merged$Duration),2))) +
+  ylim(0,600) +
+  geom_smooth(method = lm)
+```
+
+There is a slight positive line but with the low correlation we would say this is not incredibly meaningful.
 
 ### Algo idea, compare 1 district to the neighboring?
 ```{r warning=FALSE}
