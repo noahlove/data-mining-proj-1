@@ -1,6 +1,9 @@
 ---
 title: "Project 1 Main"
-output: html_document
+author: "Noah Love and Daniel Jang"
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -58,6 +61,7 @@ nyc <-  as_tibble(read.socrata("https://data.cityofnewyork.us/resource/fhrw-4uyv
 
 ```
 
+First we had to decide how to limit the set. We wanted to be able to make generalizations about the entire city of New York, so we didn't want to limit geographrically. A random sample might have worked over the decade, but instead we felt it was more representative to choose one complete year. We started with 2020, but then wanted to mitigate the effects of COVID as that was not something we wanted to research. So instead we choose 2018 as a date that should be unaffected and otherwise representative of a "normal" year. 
 
 Dplyr was used to clean the data. Primarily this involved simple data cleaning; we converted numbers back to numbers rather than characters and removed the columns we felt were not helpful. 
 
@@ -83,7 +87,7 @@ df_payroll <- as_tibble(read.socrata(url_2018))
 
 ```
 
-The same was done for the payroll dataset. However, we added an additional column here, which represented total pay for each employee as a sum of "regular pay, overtime pay and other pay."
+The same was done for the payroll dataset. However, we added an additional column here, which represented total pay for each employee as a sum of "regular pay, overtime pay and other pay." At first we didn't take a subset.
 
 ```{r cleaning payroll}
 df_payroll_cleaned <- df_payroll %>%
@@ -100,7 +104,7 @@ df_payroll_cleaned <- df_payroll %>%
 
 One of the first intruiging points on the data set was agency start date. In effect, we could see when each employee began working for the city! This also helped in case there was a large amount stuck at 1900 for example. Here, it appears the most tenure employee began in the 1960's!
 
-```{r warning=FALSE}
+```{r echo=FALSE, warning=FALSE}
 ggplot(df_payroll_cleaned, aes(x = year(agency_start_date))) + 
   geom_histogram(binwidth = 1) + 
   xlim(1960,2021)
@@ -112,7 +116,7 @@ ggplot(df_payroll_cleaned, aes(x = year(agency_start_date))) +
 
 Next, we thought it would be interesting to look at how 311 calls were made. I initally had assumed they were all phone calls, but in fact they weren't! Also reported is the location report type. For example, if there was a noise distrubance at a church, it would list a place of worship. Or if a playground set was broken, it would list a playground. Here, we chose to show the top 5.
 
-```{r warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 counts_of_start_type <- df_311 %>% 
   group_by(open_data_channel_type) %>% 
   dplyr::summarize(number_rows = n())
@@ -125,7 +129,7 @@ location_type_count <- df_311 %>%
   
 ```
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(counts_of_start_type, aes(x = "", y = number_rows, fill = open_data_channel_type)) + 
   geom_bar(stat = "identity", width = 1, color="white") + 
   coord_polar("y", start = 0) + 
@@ -143,7 +147,7 @@ ggplot(location_type_count, aes(x = "", y = number_rows, fill = location_type)) 
 
 Next in the exploration was asking who is paid the most and who is paid the least. We assume this is a rather normal question to ask with the payroll set. We assumed that the mayors office might be at top followed by high skilled or dangerous jobs such as firefighting or engineers for water or power. 
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 pay_by_department<-df_payroll_cleaned %>% 
   group_by(agency_name) %>% 
   dplyr::summarise(Mean = mean(total_pay)) %>% 
@@ -153,7 +157,6 @@ bottom_pay_by_department<-pay_by_department %>%
   dplyr::arrange(desc(Mean)) %>% 
   top_n(-6) 
   
-
 top_pay_by_department <- pay_by_department %>% 
   dplyr::arrange(desc(Mean)) %>% 
   top_n(6)  
@@ -169,17 +172,34 @@ graph_pay<-ggplot(extreme_pay, aes(x = agency_name, y = Mean))+
 
 ```
 
-```{r}
+```{r echo=FALSE, warning=FALSE}
 graph_pay
 ```
-
-To our surprise, most of the highest paid (by average) agencies were the various community boards! Around \$100,000, these were high average salaries. But on the other end of the spectrum, some community boards were among the lowest 5 agencies paid. Especially surprising was that Bronx community boards were paid much higher than those in Manhattan for example. With this in mind, we thought it represented the perfect cross over between the two datasets. Both the payroll and the 311 dataset listed the community board that was responsible. 
-
-
-
-We also wanted to see the distribution of 311 calls by community board! We think they would be relatively equal.
+To our great surprise, most of the highest paid (by average) agencies were the various community boards! Around \$100,000, these were high average salaries. But on the other end of the spectrum, some community boards were among the lowest 5 agencies paid. Below is a summary of just community board pay throughout New York City. Especially surprising was that Bronx community boards were paid much higher than those in Manhattan for example. 
 
 ```{r}
+df_payroll_cleaned
+
+different_board_pay <- df_payroll_cleaned %>%
+   dplyr::filter(grepl('COMMUNITY', agency_name)) %>% 
+   dplyr::filter(!grepl('COLLEGE', agency_name)) %>% 
+   dplyr::group_by(agency_name) %>% 
+   dplyr::summarise(Mean = mean(total_pay)) 
+
+different_board_pay  
+```
+
+
+
+
+With this in mind, we thought it represented the perfect cross over between the two datasets. Both the payroll and the 311 dataset listed the community board that was responsible. We also wanted to see the distribution of 311 calls by community board! We think they would be relatively equal.
+
+
+
+
+
+
+```{r Summary of board pay, echo=FALSE, message=FALSE, warning=FALSE}
 community_board_311 <- df_311 %>% 
   dplyr::group_by(community_board) %>% 
   dplyr::summarize(number_rows = n()) %>% 
@@ -188,7 +208,11 @@ community_board_311 <- df_311 %>%
 
 summary(community_board_311)
 ```
+
 There is quite a range! Although not ideal for a bargraph, we graphed the various districts (or community boards) to see the variability, even though it is not possible to read the labels of which community is which. 
+
+
+
 
 ```{r Graph of 311s by district, echo=FALSE}
 cummunity_311s_graph <-ggplot(community_board_311, aes(x = community_board, y = number_rows))+
@@ -204,12 +228,10 @@ bottom_311s <-community_board_311 %>%
   dplyr::arrange(desc(number_rows)) %>% 
   top_n(-4) 
   
-
 top_311s <- community_board_311 %>% 
   dplyr::arrange(desc(number_rows)) %>% 
   top_n(4)  
   
-
 extreme_311s <-bind_rows(bottom_311s, top_311s)
 
 cummunity_311s_graph <-ggplot(extreme_311s, aes(x = community_board, y = number_rows))+
@@ -315,24 +337,6 @@ ggplot(df_merged_3,aes(x=Total,y=payrollbudget))+
 ```
 
 
-
-
-
-### Mapping of the data
-
-```{r}
-#register_google(key = "AIzaSyAEkvFUTrN-n96QqRvpHxmtNyucQveP8oU")
-```
-
- 
-```{r}
-#nyc_map<-get_map(location = c(lon = -74.00, lat = 40.71), maptype = "terrain", zoom = 11)
-```
-
-
-```{r}
-#ggmap(nyc_map)
-```
 
 
 
