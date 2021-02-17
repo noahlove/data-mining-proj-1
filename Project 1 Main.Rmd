@@ -385,7 +385,10 @@ colnames(df_merged_3) <- c(colnames(df_merged_2), "payrollbudget")
 
 summary(only_boards_df$total_pay)
 ```
-So as one final chance, lets try grouping these by district and see if there is a stronger result. This removes smaller positions like 
+So as one final chance, lets try grouping these by district and see if there is a stronger result. This removes smaller positions that likely have little impact. 
+
+#### Engineered feature
+As such, the most helpful feature that we engineered was a column of the data that was the overall payroll budget for each community board. Because commmunity boards consist of paid, nonpaid and nonsalaried individuals, it was helpful to be able to have a feature that directly told us the overall budget that board had to distribute. This feature was almost more helpful than just taking averages of gross pay for example as it helped us better categorize efficient community boards. For example, a theoretically corrupt board could make a bunch of their nonsalaried members salaried, just for a very low amount of money which would drop the average. Here, we can just look at the money given to them directly from the city level. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
