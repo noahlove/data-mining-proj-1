@@ -179,8 +179,6 @@ graph_pay
 Here is a summary of the averages of only the community boards. The pay ranges from (on average) \$16,500 to over \$112,000! This is quite the gap!
 
 ```{r}
-df_payroll_cleaned
-
 different_board_pay <- df_payroll_cleaned %>%
    dplyr::filter(grepl('COMMUNITY', agency_name)) %>% 
    dplyr::filter(!grepl('COLLEGE', agency_name)) %>% 
@@ -188,8 +186,6 @@ different_board_pay <- df_payroll_cleaned %>%
    dplyr::summarise(Mean = mean(total_pay)) 
 
 summary(different_board_pay)
-
-
 
 ```
 
@@ -212,7 +208,7 @@ There is quite a range! Although not ideal for a bargraph, we graphed the variou
 
 
 
-```{r Graph of 311s by district, echo=FALSE}
+```{r Graph of 311s by district, echo=FALSE, message=FALSE, warning=FALSE}
 cummunity_311s_graph <-ggplot(community_board_311, aes(x = community_board, y = number_rows))+
   geom_bar(stat = "identity") + 
   ggtitle("Mean pay by agency (top and bottom 6)") 
@@ -243,14 +239,13 @@ cummunity_311s_graph
 
 There is a wide disparity among 311's per community board! This is rather surprising, especially with how large of a jump there is. There are multiple districts with no 311s, in multiple boroughs, while others, including Manhattan have more than 30,000 in one calanedar year. However, the top contributing community board areas were not just Manhattan, but 3 different boroughs in just the top 4 results. 
 
-
 ### Does pay of community board effect responses?!
 
 Clearly different community boards are paid very different amounts. Does this reflect their community and their involvement in making that area better? We would hope that the highest paid community boards had the best areas. This would be represented in their 311 response.  We can look at it :
 - Amount of 311 calls (more is probably worse) as it represents problems
 - Time between created and closed, or how long it takes to fix problems
 
-```{r conversion and merger, echo=FALSE}
+```{r conversion and merger, echo=FALSE, message=FALSE, warning=FALSE}
 #function that converts board names to payroll data format
 dconverter <- function(x) {
   boardnumber <- unlist(regmatches(x, gregexpr("[1-9]+", x)))
@@ -271,9 +266,8 @@ dconverter <- function(x) {
   return(newname[1])
 }
 
-#example 
+#example
 #dconverter(levels(as.factor(df_311$community_board))[17])
-
 #full conversion (current runtime ~1-2 min)
 df_311$community_board_full <-
   laply(df_311$community_board, dconverter)
@@ -299,20 +293,22 @@ df_merged <- smartbind(durationavg, payavg)
 df_merged <-
   as.data.frame(t(df_merged[, colSums(is.na(df_merged)) == 0]))
 colnames(df_merged) <- c("Duration", "Salary")
+#scatterplot between total pay and duration 
 
 
 ```
 
 Below we can see a scatterplot between average salary and duration of cases. 
 
-```{r scatterplot of total pay and duration, echo=FALSE}
+```{r scatterplot of total pay and duration, echo=FALSE, message=FALSE, warning=FALSE}
 
 ggplot(df_merged,aes(x=Salary,y=Duration))+
   geom_point()+
   labs(title=paste("Scatterplot Between Average Salary and Duration of Cases","cor=",round(cor(df_merged$Salary,df_merged$Duration),2)))
 
+
 ```
-The answer appears to be no. The vast majority of communities have a very similar average duration (100-500 minutes) regardless of mean pay. Then there are the 3 large outliers at the top. If we pretend the 3 high outliers aren't relevant (maybe these calls relate to things outside of the boards controll, like bridges or times square for example):
+The answer appears to be no. The vast majority of communities have a very similar average duration (100-500 minutes) regardless of mean pay. Then there are the 3 large outliers at the top. If we pretend the 3 high outliers aren't relevant (maybe these calls relate to things outside of the boards control, like bridges or times square for example):
 
 ```{r echo=FALSE}
 ggplot(df_merged,aes(x=Salary,y=Duration))+
@@ -324,43 +320,35 @@ ggplot(df_merged,aes(x=Salary,y=Duration))+
 
 There is a slight positive line but with the low correlation we would say this is not incredibly meaningful.
 
-### Algo idea, compare 1 district to the neighboring?
+### Algo, compare 1 district to the neighboring its neighboring. Does it predict?
 ```{r echo=FALSE, warning=FALSE}
 #First idea, simple regression between salary (y) and number of 311 cases/average duration of 311 cases
-community_board_311_amount <- df_311 %>%
-  dplyr::group_by(community_board_full) %>%
-  dplyr::summarize(number_rows = n()) %>%
-  dplyr::arrange(desc(number_rows)) %>%
+community_board_311_amount <- df_311 %>% 
+  dplyr::group_by(community_board_full) %>% 
+  dplyr::summarize(number_rows = n()) %>% 
+  dplyr::arrange(desc(number_rows))%>%
   t()
-
-colnames(community_board_311_amount) <- community_board_311_amount[1, ]
-
-community_board_311_amount <- t(as.data.frame(community_board_311_amount[2, ]))
-df_merged_2 <- t(df_merged)
-df_merged_2 <- smartbind(df_merged_2, community_board_311_amount)
-rownames(df_merged_2) <- c(colnames(df_merged), "Total")
-df_merged_2 <- as.data.frame(t(df_merged_2))
-df_merged_2[] <- lapply(df_merged_2, as.numeric)
-
+colnames(community_board_311_amount)<-community_board_311_amount[1,]
+community_board_311_amount<-t(as.data.frame(community_board_311_amount[2,]))
+df_merged_2<-t(df_merged)
+df_merged_2<-smartbind(df_merged_2,community_board_311_amount)
+rownames(df_merged_2)<-c(colnames(df_merged),"Total")
+df_merged_2<-as.data.frame(t(df_merged_2))
+df_merged_2[]<-lapply(df_merged_2,as.numeric)
 #model1
-lm1 <- lm(Salary ~ Duration + Total, data = df_merged_2)
-
+lm1<-lm(Salary~Duration+Total,data=df_merged_2)
 summary(lm1)
-
-plot(
-  df_merged_2$Salary,
-  df_merged_2$Total,
-  main = "Scatterplot Between Salary and Number of 311 Cases, by Borough Boards",
-  xlab = "Total Number of 311 cases, by Community Boards",
-  ylab = "Average Salary, by Community Boards"
-)
-
+#plot(df_merged_2$Salary,df_merged_2$Total,main="Scatterplot Between Salary and Number of 311 Cases, by Borough Boards",
+    # xlab="Total Number of 311 cases, by Community Boards",
+   #  ylab="Average Salary, by Community Boards")
 
 ```
 
+
+
 ### Second idea, simple regression between total payroll budget for a given community board (y) and number of 311 cases/average duration of 311 cases for that community board
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 budget <-
   by(df_payroll_cleaned$total_pay,
      df_payroll_cleaned$agency_name,
@@ -381,9 +369,12 @@ ggplot(df_merged_3,aes(x=Total,y=payrollbudget))+
   geom_smooth(method = lm)
 
 ```
+
+![Scatterplot ](Picture1.png)
+
 Finally what if we looked at more specificially only a certain position, in this case the "district manager" although there many be several on a community board. The pay difference in this case is far more dirastic! 
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 only_boards_df <- df_payroll_cleaned %>%
    dplyr::filter(grepl('COMMUNITY', agency_name)) %>% 
    dplyr::filter(!grepl('COLLEGE', agency_name)) %>% 
@@ -392,13 +383,11 @@ only_boards_df <- df_payroll_cleaned %>%
 only_boards_merged <- as.data.frame(t(smartbind(t(only_boards_df), df_budget)))
 colnames(df_merged_3) <- c(colnames(df_merged_2), "payrollbudget")
 
-only_boards_merged
-
 summary(only_boards_df$total_pay)
 ```
-So as one final chance, lets try grouping these by distric and see if there is a stronger result. This removes smaller positions like 
+So as one final chance, lets try grouping these by district and see if there is a stronger result. This removes smaller positions like 
 
-```{r}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 
 only_boards_df <- df_payroll_cleaned %>%
    dplyr::filter(grepl('COMMUNITY', agency_name)) %>% 
@@ -432,10 +421,15 @@ ggplot(data = lm_payroll_to_district_manager, mapping = aes(x = payroll_budget, 
 
 This is rather obvious. The larger the budget, the more the district managers are paid. 
 
-```{r}
-#Last I want to compare distric manager to number of cases
-```
+### Do these findings make practical sense?
 
+After further research, the answer appears to be yes. The individual salaries of borough presidents or district managers are unlikely to have an affect on the overall response that the community board makes. Why? 
 
+The 59 community boards of NYC each consist of 50 nonsalaried members who are nominated by their district's City Council members. These volunteer type positions make up the vast majority of the human power in each community board. While each District Manager establishes an office and can hire staff, many times these nonsalaried members appear to be the ones that truly care about the community and are excited to make a change. 
 
+In fact, there are strict limits on the amount of board members that are employees of New York City (no more than 25 \%). In this sense, the data that we have available to use shows that these salaried employees likely have a very small impact on the number of 311s and the effective response that that community has. 
 
+Links for more reading:
+[Manhattan Borough President](https://www.manhattanbp.nyc.gov/communityboards/)
+[NYC Government description of roles](https://www.manhattanbp.nyc.gov/communityboards/)
+[Laws about the community boards and their responsibilities](http://www.cb3qn.nyc.gov/1653)
